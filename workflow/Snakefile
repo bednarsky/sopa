@@ -22,7 +22,9 @@ rule all:
         echo → Open the result in the explorer: 'open {params.explorer_experiment}'
         """
 
-rule to_spatialdata:
+rule:
+    name: # set rule names dynamically, so that they don't conflict in DAG building phase
+        f"{config["key"]}_to_spatialdata"
     input:
         paths.data_path if config["read"]["technology"] != "uniform" else [],
     output:
@@ -40,7 +42,10 @@ rule to_spatialdata:
         sopa read {params.data_path} --sdata-path {params.sdata_path} {params.args_reader}
         """
 
-checkpoint patchify_cellpose:
+
+checkpoint:
+    name: 
+        f"{config["key"]}_patchify_cellpose"
     input:
         paths.sdata_zgroup,
     output:
@@ -56,7 +61,9 @@ checkpoint patchify_cellpose:
         sopa patchify image {params.sdata_path} {params.args_patchify}
         """
 
-checkpoint patchify_baysor:
+checkpoint:
+    name: 
+        f"{config["key"]}_patchify_baysor"
     input:
         paths.sdata_zgroup,
         paths.smk_cellpose_boundaries if args.cellpose else [],
@@ -75,7 +82,9 @@ checkpoint patchify_baysor:
         sopa patchify baysor {params.sdata_path} {params.args_patchify} {params.args_baysor} {params.arg_prior}
         """
 
-checkpoint patchify_comseg:
+checkpoint:
+    name: 
+        f"{config["key"]}_patchify_comseg"
     input:
         paths.sdata_zgroup,
         paths.smk_cellpose_boundaries if args.cellpose else [],
@@ -101,7 +110,9 @@ checkpoint patchify_comseg:
         sopa patchify comseg {params.sdata_path} {params.args_patchify} {params.args_comseg} {params.arg_prior}
         """
 
-rule patch_segmentation_cellpose:
+rule:
+    name: 
+        f"{config["key"]}_patch_segmentation_cellpose"
     input:
         paths.smk_patches_file_image,
         paths.smk_patches,
@@ -118,7 +129,9 @@ rule patch_segmentation_cellpose:
         sopa segmentation cellpose {params.sdata_path} --patch-dir {params.smk_cellpose_temp_dir} --patch-index {wildcards.index} {params.args_cellpose}
         """
 
-rule patch_segmentation_baysor:
+rule:
+    name: 
+        f"{config["key"]}_patch_segmentation_baysor"
     input:
         patches_file = paths.smk_patches_file_baysor,
         baysor_patch = paths.smk_baysor_temp_dir / "{index}",
@@ -144,7 +157,9 @@ rule patch_segmentation_baysor:
         fi
         """
 
-rule patch_segmentation_comseg:
+rule:
+    name: 
+        f"{config["key"]}_patch_segmentation_comseg"
     input:
         patches_file = paths.smk_patches_file_comseg,
         baysor_patch = paths.smk_comseg_temp_dir / "{index}",
@@ -165,11 +180,13 @@ rule patch_segmentation_comseg:
 
 def get_input_resolve(name, dirs=False):
     def _(wilcards):
-        with getattr(checkpoints, f"patchify_{name}").get(**wilcards).output.patches_file.open() as f:
+        with getattr(checkpoints, f"{config["key"]}_patchify_{name}").get(**wilcards).output.patches_file.open() as f:
             return paths.cells_paths(f.read(), name, dirs=dirs)
     return _
 
-rule resolve_cellpose:
+rule:
+    name: 
+        f"{config["key"]}_resolve_cellpose"
     input:
         get_input_resolve("cellpose"),
     output:
@@ -184,7 +201,9 @@ rule resolve_cellpose:
         sopa resolve cellpose {params.sdata_path} --patch-dir {params.smk_cellpose_temp_dir}
         """
 
-rule resolve_baysor:
+rule:
+    name: 
+        f"{config["key"]}_resolve_baysor"
     input:
         files = get_input_resolve("baysor"),
         dirs = get_input_resolve("baysor", dirs=True),
@@ -206,7 +225,9 @@ rule resolve_baysor:
         rm -r {params.smk_baysor_temp_dir}    # cleanup large baysor files
         """
 
-rule resolve_comseg:
+rule:
+    name: 
+        f"{config["key"]}_resolve_comseg"
     input:
         files = get_input_resolve("comseg"),
         dirs = get_input_resolve("comseg",dirs=True),
@@ -238,7 +259,9 @@ def get_smk_boundaries(args):
     else:
         raise ValueError("No segmentation method selected")
 
-rule aggregate:
+rule:
+    name: 
+        f"{config["key"]}_aggregate"
     input:
         get_smk_boundaries(args),
     output:
@@ -255,7 +278,9 @@ rule aggregate:
         sopa aggregate {params.sdata_path} {params.args_aggregate}
         """
 
-rule annotate:
+rule:
+    name: 
+        f"{config["key"]}_annotate"
     input:
         paths.smk_aggregation,
     output:
@@ -277,7 +302,9 @@ rule annotate:
         sopa annotate {params.method_name} {params.sdata_path} {params.args_annotation}
         """
 
-rule image_write:
+rule:
+    name: 
+        f"{config["key"]}_image_write"
     input:
         paths.sdata_zgroup,
     output:
@@ -296,7 +323,9 @@ rule image_write:
         sopa explorer write {params.sdata_path} --output-path {params.explorer_directory} {params.args_explorer} --mode "+i" --no-save-h5ad
         """
 
-rule report:
+rule:
+    name: 
+        f"{config["key"]}_report"
     input:
         get_smk_boundaries(args),
         paths.smk_aggregation,
@@ -313,7 +342,9 @@ rule report:
         sopa report {params.sdata_path} {params.report}
         """
 
-rule explorer:
+rule:
+    name: 
+        f"{config["key"]}_explorer"
     input:
         get_smk_boundaries(args),
         paths.smk_aggregation,
