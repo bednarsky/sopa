@@ -139,6 +139,7 @@ rule:
         paths.smk_baysor_temp_dir / "{index}" / "segmentation_counts.loom",
     params:
         args_baysor_prior_seg = args.baysor_prior_seg,
+        baysor_executable = config["executables"]["baysor"],
     resources:
         mem_mb=128_000,
     shell:
@@ -149,11 +150,11 @@ rule:
 
         cd {input.baysor_patch}
 
-        help_output=$({config[executables][baysor]} run --help 2>&1) # check if the polygon-format option is available
+        help_output=$({params.baysor_executable} run --help 2>&1) # check if the polygon-format option is available
         if [[ $help_output == *"polygon-format"* ]]; then
-            {config[executables][baysor]} run --polygon-format GeometryCollection -c config.toml transcripts.csv {params.args_baysor_prior_seg}
+            {params.baysor_executable} run --polygon-format GeometryCollection -c config.toml transcripts.csv {params.args_baysor_prior_seg}
         else
-            {config[executables][baysor]} run --save-polygons GeoJSON -c config.toml transcripts.csv {params.args_baysor_prior_seg}
+            {params.baysor_executable} run --save-polygons GeoJSON -c config.toml transcripts.csv {params.args_baysor_prior_seg}
         fi
         """
 
