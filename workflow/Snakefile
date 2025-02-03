@@ -223,7 +223,7 @@ rule:
         """
         sopa resolve baysor {params.sdata_path} --gene-column {params.gene_column} {params.args_min_area} {params.args_patches_dirs}
 
-        rm -r {params.smk_baysor_temp_dir}    # cleanup large baysor files
+        # rm -r {params.smk_baysor_temp_dir}    # cleanup large baysor files -> removed RB to allow DAG to be built after running
         """
 
 rule:
@@ -247,7 +247,7 @@ rule:
         """
         sopa resolve comseg {params.sdata_path} --gene-column {params.gene_column} {params.args_min_area} {params.args_patches_dirs}
 
-        rm -r {params.smk_comseg_temp_dir}    # cleanup large comseg files
+        # rm -r {params.smk_comseg_temp_dir}    # cleanup large comseg files -> removed RB to allow DAG to be built after running
         """
 
 def get_smk_boundaries(args):
