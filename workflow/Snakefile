@@ -26,7 +26,7 @@ rule:
     name: # set rule names dynamically, so that they don't conflict in DAG building phase
         f"{config["key"]}_to_spatialdata"
     input:
-        paths.data_path if config["read"]["technology"] != "uniform" else [],
+        ancient(paths.data_path if config["read"]["technology"] != "uniform" else []),
     output:
         paths.sdata_zgroup if paths.data_path else [],
     conda:
