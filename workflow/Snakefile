@@ -75,6 +75,8 @@ checkpoint:
         args_baysor = args.dump_baysor_patchify() if args.baysor else "",
         arg_prior = "--use-prior" if args.cellpose else "",
         sdata_path = paths.sdata_path,
+    resources:
+        mem_mb=32_000,
     conda:
         "sopa"
     shell:
