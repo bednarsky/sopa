@@ -131,6 +131,12 @@ rule:
         sopa segmentation cellpose {params.sdata_path} --patch-dir {params.smk_cellpose_temp_dir} --patch-index {wildcards.index} {params.args_cellpose}
         """
 
+def get_mem_mb(wildcards, attempt):
+    return attempt * 64000
+
+def get_time(wildcards, attempt):
+    return f"{attempt*4}h"
+
 rule:
     name: 
         f"{config["key"]}_patch_segmentation_baysor"
@@ -139,14 +145,15 @@ rule:
         baysor_patch = paths.smk_baysor_temp_dir / "{index}",
     output:
         paths.smk_baysor_temp_dir / "{index}" / "segmentation_counts.loom",
+    retries: 3
     params:
         args_baysor_prior_seg = args.baysor_prior_seg,
         baysor_executable = config["executables"]["baysor"],
     resources:
         slurm_partition="shortq",
         slurm_extra="--qos=shortq",
-        mem_mb=256000,
-        runtime="12h",
+        mem_mb=get_mem_mb,
+        runtime=get_time,
     shell:
         """
         if command -v module &> /dev/null; then
@@ -218,6 +225,8 @@ rule:
         touch(paths.smk_table),
     conda:
         "sopa"
+    resources:
+        mem_mb=32_000,
     params:
         args_patches_dirs = lambda _, input: " ".join(f"--patches-dirs {directory}" for directory in input.dirs),
         args_min_area = args.min_area("baysor"),
@@ -341,6 +350,8 @@ rule:
     params:
         sdata_path = paths.sdata_path,
         report = paths.report,
+    resources:
+        mem_mb=32_000,
     conda:
         "sopa"
     shell:
